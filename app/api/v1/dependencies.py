@@ -1,10 +1,9 @@
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, APIKeyHeader
+from fastapi.security import OAuth2PasswordBearer, HTTPAuthorizationCredentials, APIKeyHeader
 from typing import Optional
 from datetime import datetime, timezone
 from app.core.security import verify_token, verify_api_key
-# Note: UserRepository placeholder
-from app.repositories.base_repository import BaseRepository
+from app.repositories.user_repository import UserRepository, ApiKeyRepository
 from app.models.database import User, ApiKey
 from app.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,23 +11,21 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
 # Security schemes
-http_bearer = HTTPBearer()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 # ============= JWT DEPENDENCY =============
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(http_bearer),
+    token: str = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Dependency untuk validate JWT token dari Authorization header
     """
-    token = credentials.credentials
     payload = verify_token(token)  # Raises HTTPException jika invalid
     
-    # Manual query as UserRepository is not fully implemented yet
-    result = await db.execute(select(User).where(User.id == int(payload["sub"])))
-    user = result.scalar_one_or_none()
+    user_repo = UserRepository(db, User)
+    user = await user_repo.get_by_id(int(payload["sub"]))
     
     if not user or not user.is_active:
         raise HTTPException(
@@ -52,14 +49,12 @@ async def get_current_user_by_api_key(
             detail="API Key required"
         )
     
-    # Manual query for API Key
     import hashlib
     provided_hash = hashlib.sha256(api_key.encode()).hexdigest()
     
-    result = await db.execute(
-        select(ApiKey).where(ApiKey.key_hash == provided_hash).options(selectinload(ApiKey.user))
-    )
-    api_key_record = result.scalar_one_or_none()
+    api_key_repo = ApiKeyRepository(db, ApiKey)
+    api_key_record = await api_key_repo.get_by_hash_with_user(provided_hash)
+
     
     if not api_key_record or not api_key_record.is_active:
         raise HTTPException(

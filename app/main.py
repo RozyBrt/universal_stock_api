@@ -175,10 +175,10 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
 # ============= ROUTES REGISTRATION =============
 
 # Include routers dari v1 API
-app.include_router(auth.router, prefix="/api/v1/auth")
-app.include_router(items.router, prefix="/api/v1/items")
-app.include_router(categories.router, prefix="/api/v1/categories")
-app.include_router(transactions.router, prefix="/api/v1/transactions")
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(items.router, prefix="/api/v1")
+app.include_router(categories.router, prefix="/api/v1")
+app.include_router(transactions.router, prefix="/api/v1")
 
 # ============= HEALTH CHECK ENDPOINT =============
 

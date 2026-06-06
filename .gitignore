@@ -9,3 +9,9 @@ env/
 .coverage
 htmlcov/
 alembic/versions/*.pyc
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
