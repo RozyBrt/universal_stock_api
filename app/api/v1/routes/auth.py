@@ -40,3 +40,36 @@ async def generate_api_key(
         "api_key": plain_key,
         "message": "Save this key securely, it cannot be recovered!"
     }
+
+from sqlalchemy import select
+from app.models.database import ApiKey
+
+@router.get("/api-key", response_model=list)
+async def get_api_keys(
+    current_user = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """List API keys for current user"""
+    result = await db.execute(
+        select(ApiKey).where(ApiKey.user_id == current_user.id)
+    )
+    keys = result.scalars().all()
+    return [{"id": k.id, "name": k.name, "created_at": k.created_at, "is_active": k.is_active, "expires_at": k.expires_at, "last_used_at": k.last_used_at} for k in keys]
+
+@router.delete("/api-key/{key_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def revoke_api_key(
+    key_id: int,
+    current_user = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Revoke API key"""
+    result = await db.execute(
+        select(ApiKey).where(ApiKey.id == key_id, ApiKey.user_id == current_user.id)
+    )
+    key = result.scalar_one_or_none()
+    if not key:
+        raise HTTPException(status_code=404, detail="Key not found")
+    
+    key.is_active = False
+    await db.commit()
+    return None

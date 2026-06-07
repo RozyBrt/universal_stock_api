@@ -43,7 +43,7 @@ class Item(Base):
     description = Column(Text)
     sku = Column(String(100), unique=True, nullable=False)
     category_id = Column(Integer, ForeignKey("categories.id", ondelete="RESTRICT"), nullable=False)
-    unit_price = Column(Numeric(10, 2), nullable=False)
+    unit_price = Column(Numeric(18, 2), nullable=False)
     quantity_in_stock = Column(Integer, default=0, nullable=False)
     reorder_level = Column(Integer, default=10)
     is_active = Column(Boolean, default=True)
