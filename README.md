@@ -1,42 +1,51 @@
-# Universal Stock API - Backend
+# Universal Stock - Fullstack Inventory Management
 
-Sistem manajemen inventaris (stock management) tingkat produksi (*production-ready*) dengan arsitektur yang kuat dan aman. Backend ini dibangun menggunakan stack modern berbasis Python untuk menjamin performa, keamanan, serta integritas data yang optimal.
+Sistem manajemen inventaris (stock management) tingkat produksi (*production-ready*) dengan arsitektur yang kuat dan aman. Repositori ini merupakan sebuah *Monorepo* yang berisi aplikasi **Backend (FastAPI)** dan **Frontend (Next.js)** secara bersamaan.
 
-## ✨ Fitur Utama
+## 🌟 Tentang Proyek Ini
 
-- **Keamanan Lapis Ganda (Dual Authentication):**
-  - **JWT (JSON Web Tokens):** Untuk autentikasi pengguna manusia/operator melalui *Login*.
-  - **API Keys:** Manajemen akses yang terpisah untuk integrasi dengan sistem/perangkat pihak ketiga (seperti Aplikasi Mesin Kasir/Point of Sales). Bisa di- *revoke* kapan saja.
-- **Role-Based Access Control (RBAC):** Pemisahan hak akses (Admin vs Staf Biasa) untuk membatasi aksi-aksi krusial.
-- **Concurrency Safety:** Implementasi fitur *Database Row-Level Locking* (`FOR UPDATE`) pada transaksi pengeluaran stok. Ini menjamin akurasi stok tidak akan pernah menjadi negatif, bahkan ketika puluhan kasir memotong stok barang yang sama di detik yang bersamaan.
-- **Audit Trail Penuh:** Setiap perubahan stok (barang masuk/keluar) dicatat dalam tabel transaksi yang mereferensikan ke akun siapa pelakunya. Tidak ada manipulasi "jumlah stok" secara diam-diam.
-- **Pagination & Advanced Search:** Endpoint API dirancang untuk menangani jutaan data dengan pagination, serta fitur *Advanced Search* untuk pencarian berbasis nama, kategori, maupun harga.
+Sistem ini dibangun untuk menjamin performa, keamanan lapis ganda, serta integritas data yang optimal, dilengkapi dengan Dasbor Web modern untuk kemudahan operasional.
 
-## 🛠️ Stack Teknologi (Layered Architecture)
+### 🖥️ Frontend (Web Dashboard)
+Antarmuka pengguna dibangun menggunakan **Next.js (React)** dengan desain modern, cepat, dan responsif.
 
-Sistem ini menerapkan konsep *Separation of Concerns* untuk memisahkan antara rute, layanan (logika bisnis), dan repositori (basis data):
+**Fitur Unggulan Frontend:**
+- Dasbor pemantauan stok *real-time* dengan peringatan stok menipis.
+- *My Log*: Pelacakan aktivitas pribadi dan riwayat transaksi pengguna.
+- Antarmuka pembuatan dan pencabutan *API Key* secara mandiri.
+- Terletak penuh di dalam folder `frontend/`.
+
+👉 **[Baca selengkapnya di Dokumentasi Frontend](frontend/README.md)**
+
+### ⚙️ Backend (API Server)
+Sistem *backend* API dibangun menggunakan **Python & FastAPI** dengan penanganan asinkronus (*async*) murni.
+
+**Fitur Unggulan Backend:**
+- **Keamanan Lapis Ganda:** Mendukung token *JWT* (untuk *User Login*) dan *API Keys* (untuk integrasi aplikasi mesin kasir pihak ketiga).
+- **Concurrency Safety:** Menggunakan penguncian baris database (*Row-Level Locking*) `FOR UPDATE` saat memotong stok untuk mencegah stok minus akibat aksi bersamaan.
+- **Audit Trail Penuh:** Mencatat secara ketat siapa pengguna yang menambah atau mengurangi stok barang.
+
+---
+
+## 🛠️ Stack Teknologi Backend
 
 - **Framework:** FastAPI (Asynchronous)
 - **Database:** PostgreSQL
 - **ORM / Driver:** SQLAlchemy 2.0 (Async) dengan `asyncpg`
 - **Migrasi:** Alembic
 - **Validasi Data:** Pydantic v2
-- **Enkripsi Password & Hashing:** Passlib & hashlib
 
-## 📂 Struktur Direktori
+## 📂 Struktur Direktori Utama
 
 ```text
-app/
-├── api/v1/          # Kumpulan Router/Endpoint API dan Dependencies
-├── core/            # Pengaturan global (config), Security, Exception Handlers
-├── models/          # Definisi Tabel (SQLAlchemy Declarative Base) & Pydantic Schemas
-├── repositories/    # Logika kueri database (Layer Akses Data)
-├── services/        # Logika bisnis inti dan aturan-aturan aplikasi
-├── main.py          # Titik masuk (Entry Point) utama FastAPI
-└── database.py      # Pengaturan koneksi Async Engine
+/
+├── app/             # Kode sumber Backend (API Routes, Services, Models)
+├── frontend/        # Kode sumber Frontend Dasbor (Next.js App Router)
+├── migrations/      # Berkas migrasi skema database (Alembic)
+└── README.md        # Dokumentasi repositori utama (Berkas ini)
 ```
 
-## 🚀 Cara Menjalankan
+## 🚀 Cara Menjalankan Backend (Server)
 
 1. Pastikan Anda memiliki Python 3.9+ dan PostgreSQL yang sedang berjalan.
 2. Atur konfigurasi database di file `.env`:
@@ -53,3 +62,5 @@ app/
    uvicorn app.main:app --reload
    ```
 5. Buka `http://localhost:8000/docs` untuk menjelajahi *Interactive API Documentation* (Swagger UI).
+
+*(Catatan: Untuk panduan menjalankan Web Frontend, silakan buka `frontend/README.md`)*
