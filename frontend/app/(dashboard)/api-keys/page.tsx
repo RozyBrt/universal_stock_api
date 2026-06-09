@@ -35,7 +35,7 @@ export default function ApiKeysPage() {
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetchJson(`/auth/api-key/generate?name=${encodeURIComponent(keyName)}`, {
+      const res = await fetchJson<any>(`/auth/api-key/generate?name=${encodeURIComponent(keyName)}`, {
         method: "POST"
       });
       setNewlyGeneratedKey(res.api_key);

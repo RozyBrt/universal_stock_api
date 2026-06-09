@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, Query, Path, status
+from fastapi import APIRouter, Depends, Query, Path, status, Request
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.rate_limit import limiter
+from app.config import settings
 from app.api.v1.dependencies import get_current_user, require_admin
 from app.models.schemas import (
     ItemCreate, ItemUpdate, ItemResponse, PaginatedItemResponse,
@@ -62,9 +64,11 @@ router = APIRouter(prefix="/items", tags=["items"])
         }
     }
 )
+@limiter.limit(settings.RATE_LIMIT_ITEMS_GET)
 async def get_items(
     skip: int = Query(0, ge=0, description="Number of items to skip"),
     limit: int = Query(50, ge=1, le=500, description="Items per page (max 500)"),
+    request: Request = None,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -115,6 +119,7 @@ GET /api/v1/items?skip=0&limit=25
         500: {"description": "Server error"}
     }
 )
+@limiter.limit(settings.RATE_LIMIT_SEARCH)
 async def search_items(
     q: Optional[str] = Query(None, min_length=2, max_length=100, description="Search by name or SKU"),
     category_id: Optional[int] = Query(None, gt=0, description="Filter by category"),
@@ -123,6 +128,7 @@ async def search_items(
     low_stock_only: bool = Query(False, description="Show only low stock items"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=500),
+    request: Request = None,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -190,10 +196,12 @@ GET /api/v1/items/search?q=laptop&low_stock_only=true&min_price=1000000
         500: {"description": "Server error"}
     }
 )
+@limiter.limit(settings.RATE_LIMIT_ITEMS_GET)
 async def get_low_stock_items(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=500),
     current_user: User = Depends(get_current_user),
+    request: Request = None,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -238,8 +246,10 @@ async def get_low_stock_items(
         500: {"description": "Server error"}
     }
 )
+@limiter.limit(settings.RATE_LIMIT_ITEMS_GET)
 async def get_item(
     item_id: int = Path(..., gt=0, description="Item ID"),
+    request: Request = None,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -284,9 +294,11 @@ async def get_item(
         500: {"description": "Server error"}
     }
 )
+@limiter.limit(settings.RATE_LIMIT_ITEMS_CREATE)
 async def create_item(
     item_data: ItemCreate,
     current_user: User = Depends(require_admin),
+    request: Request = None,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -357,10 +369,12 @@ async def create_item(
         500: {"description": "Server error"}
     }
 )
+@limiter.limit(settings.RATE_LIMIT_ITEMS_UPDATE)
 async def update_item(
     item_id: int = Path(..., gt=0),
     item_data: ItemUpdate = None,
     current_user: User = Depends(require_admin),
+    request: Request = None,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -405,9 +419,11 @@ async def update_item(
         500: {"description": "Server error"}
     }
 )
+@limiter.limit(settings.RATE_LIMIT_ITEMS_DELETE)
 async def delete_item(
     item_id: int = Path(..., gt=0),
     current_user: User = Depends(require_admin),
+    request: Request = None,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -444,10 +460,12 @@ async def delete_item(
         500: {"description": "Server error"}
     }
 )
+@limiter.limit(settings.RATE_LIMIT_ITEMS_STOCK)
 async def add_stock(
     item_id: int = Path(..., gt=0, description="Item ID"),
     operation: StockOperationRequest = None,
     current_user: User = Depends(get_current_user),
+    request: Request = None,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -538,10 +556,12 @@ POST /api/v1/items/1/add-stock
         500: {"description": "Server error"}
     }
 )
+@limiter.limit(settings.RATE_LIMIT_ITEMS_STOCK)
 async def remove_stock(
     item_id: int = Path(..., gt=0, description="Item ID"),
     operation: StockOperationRequest = None,
     current_user: User = Depends(get_current_user),
+    request: Request = None,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -622,9 +642,17 @@ POST /api/v1/items/1/remove-stock
             raise ItemNotFoundException(item_id)
         elif "Stok tidak cukup" in error_msg or "Insufficient stock" in error_msg:
             # Parse error message untuk extract numbers
+            available = 0
+            if "Tersedia:" in error_msg:
+                try: available = int(error_msg.split("Tersedia:")[1].strip())
+                except: pass
+            elif "Available:" in error_msg:
+                try: available = int(error_msg.split("Available:")[1].strip())
+                except: pass
+
             raise InsufficientStockException(
                 required=operation.quantity,
-                available=0,  # Frontend bisa ambil dari error details
+                available=available,
                 item_id=item_id
             )
         else:
@@ -644,10 +672,12 @@ POST /api/v1/items/1/remove-stock
     response_model=PaginatedItemResponse,
     summary="Get items by category"
 )
+@limiter.limit(settings.RATE_LIMIT_CATEGORIES_GET)
 async def get_items_by_category(
     category_id: int = Path(..., gt=0),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=500),
+    request: Request = None,
     db: AsyncSession = Depends(get_db)
 ):
     """

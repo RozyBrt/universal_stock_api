@@ -49,14 +49,16 @@ export const fetchJson = async <T>(endpoint: string, options?: RequestInit): Pro
   const res = await apiClient(endpoint, options);
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    let errorMessage = 'API Error';
+    let errorMessage = 'An error occurred';
     
-    if (typeof errorData.detail === 'string') {
+    if (errorData.error && errorData.error.message) {
+      errorMessage = errorData.error.message;
+    } else if (typeof errorData.detail === 'string') {
       errorMessage = errorData.detail;
     } else if (Array.isArray(errorData.detail)) {
       errorMessage = errorData.detail.map((e: any) => e.msg).join(', ');
-    } else if (errorData.error?.message) {
-      errorMessage = errorData.error.message;
+    } else if (errorData.message) {
+      errorMessage = errorData.message;
     }
     
     throw new Error(errorMessage);

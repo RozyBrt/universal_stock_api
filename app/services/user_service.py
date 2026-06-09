@@ -53,3 +53,17 @@ class UserService:
         )
         
         return plain_key
+        
+    async def get_user_api_keys(self, user_id: int):
+        """Ambil semua API key milik user"""
+        return await self.api_key_repo.get_by_user_id(user_id)
+        
+    async def revoke_api_key(self, key_id: int, user_id: int) -> bool:
+        """Cabut API key (soft delete/inactive)"""
+        key = await self.api_key_repo.get_by_id(key_id)
+        if not key or key.user_id != user_id:
+            return False
+        
+        key.is_active = False
+        await self.session.commit()
+        return True

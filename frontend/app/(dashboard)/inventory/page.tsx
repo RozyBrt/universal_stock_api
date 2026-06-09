@@ -13,7 +13,8 @@ export default function InventoryPage() {
     quantity: number;
     reference_number: string;
     notes: string;
-  }>({ isOpen: false, type: null, item: null, quantity: 1, reference_number: "", notes: "" });
+    error: string | null;
+  }>({ isOpen: false, type: null, item: null, quantity: 1, reference_number: "", notes: "", error: null });
 
   const [newItemModalOpen, setNewItemModalOpen] = useState(false);
   const [newItemForm, setNewItemForm] = useState({
@@ -24,12 +25,14 @@ export default function InventoryPage() {
     quantity_in_stock: 0,
     reorder_level: 5,
     description: "",
+    error: null as string | null,
   });
 
   const [categories, setCategories] = useState<any[]>([]);
   const [createCategoryModalOpen, setCreateCategoryModalOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryDesc, setNewCategoryDesc] = useState("");
+  const [categoryError, setCategoryError] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("all");
@@ -37,7 +40,7 @@ export default function InventoryPage() {
   const [editItemModalOpen, setEditItemModalOpen] = useState(false);
   const [editItemId, setEditItemId] = useState<number | null>(null);
   const [editItemForm, setEditItemForm] = useState({
-    name: "", sku: "", category_id: 1, unit_price: 0, reorder_level: 5, description: ""
+    name: "", sku: "", category_id: 1, unit_price: 0, reorder_level: 5, description: "", error: null as string | null
   });
 
   const [itemToDelete, setItemToDelete] = useState<any | null>(null);
@@ -96,11 +99,11 @@ export default function InventoryPage() {
   }, []);
 
   const openModal = (item: any, type: "in" | "out") => {
-    setActionModal({ isOpen: true, type, item, quantity: 1, reference_number: "", notes: "" });
+    setActionModal({ isOpen: true, type, item, quantity: 1, reference_number: "", notes: "", error: null });
   };
 
   const closeModal = () => {
-    setActionModal({ isOpen: false, type: null, item: null, quantity: 1, reference_number: "", notes: "" });
+    setActionModal({ isOpen: false, type: null, item: null, quantity: 1, reference_number: "", notes: "", error: null });
   };
 
   const handleStockAction = async (e: React.FormEvent) => {
@@ -120,8 +123,8 @@ export default function InventoryPage() {
       
       closeModal();
       loadItems(); // Refresh items
-    } catch (error) {
-      alert("Failed to update stock. " + error);
+    } catch (error: any) {
+      setActionModal(prev => ({ ...prev, error: error.message || String(error) }));
     }
   };
 
@@ -133,17 +136,17 @@ export default function InventoryPage() {
         body: JSON.stringify(newItemForm),
       });
       setNewItemModalOpen(false);
-      setNewItemForm({ name: "", sku: "", category_id: categories.length > 0 ? categories[0].id : 1, unit_price: 0, quantity_in_stock: 0, reorder_level: 5, description: "" });
+      setNewItemForm({ name: "", sku: "", category_id: categories.length > 0 ? categories[0].id : 1, unit_price: 0, quantity_in_stock: 0, reorder_level: 5, description: "", error: null });
       loadItems(); // Refresh items
     } catch (error: any) {
-      alert("Failed to create new item: " + error.message);
+      setNewItemForm(prev => ({ ...prev, error: error.message || String(error) }));
     }
   };
 
   const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetchJson("/categories", {
+      const response = await fetchJson<any>("/categories", {
         method: "POST",
         body: JSON.stringify({ name: newCategoryName, description: newCategoryDesc || undefined }),
       });
@@ -157,7 +160,7 @@ export default function InventoryPage() {
         setNewItemForm(prev => ({...prev, category_id: response.id}));
       }
     } catch (error: any) {
-      alert("Failed to create category: " + error.message);
+      setCategoryError(error.message || String(error));
     }
   };
 
@@ -169,7 +172,8 @@ export default function InventoryPage() {
       category_id: item.category_id || (categories.length > 0 ? categories[0].id : 1),
       unit_price: item.unit_price,
       reorder_level: item.reorder_level || 5,
-      description: item.description || ""
+      description: item.description || "",
+      error: null
     });
     setEditItemModalOpen(true);
   };
@@ -185,7 +189,7 @@ export default function InventoryPage() {
       setEditItemModalOpen(false);
       loadItems();
     } catch (error: any) {
-      alert("Failed to update item: " + error.message);
+      setEditItemForm(prev => ({ ...prev, error: error.message || String(error) }));
     }
   };
 
@@ -325,6 +329,11 @@ export default function InventoryPage() {
             <h2>
               {actionModal.type === "in" ? "Add Stock" : "Remove Stock"} - {actionModal.item.name}
             </h2>
+            {actionModal.error && (
+              <div style={{ marginBottom: "1rem", padding: "0.75rem", background: "rgba(255, 51, 102, 0.1)", border: "1px solid rgba(255, 51, 102, 0.3)", borderRadius: "8px", color: "var(--danger)", fontSize: "0.9rem" }}>
+                {actionModal.error}
+              </div>
+            )}
             <form onSubmit={handleStockAction}>
               <div className="form-group">
                 <label className="form-label">Quantity</label>
@@ -373,7 +382,11 @@ export default function InventoryPage() {
         <div className="modal-overlay">
           <div className="modal-content animate-fade-in" style={{ maxWidth: "600px" }}>
             <h2>Create New Item</h2>
-            
+            {newItemForm.error && (
+              <div style={{ marginBottom: "1rem", padding: "0.75rem", background: "rgba(255, 51, 102, 0.1)", border: "1px solid rgba(255, 51, 102, 0.3)", borderRadius: "8px", color: "var(--danger)", fontSize: "0.9rem" }}>
+                {newItemForm.error}
+              </div>
+            )}
             <form onSubmit={handleCreateItem}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
@@ -427,7 +440,11 @@ export default function InventoryPage() {
         <div className="modal-overlay">
           <div className="modal-content animate-fade-in" style={{ maxWidth: "600px" }}>
             <h2>Edit Item</h2>
-            
+            {editItemForm.error && (
+              <div style={{ marginBottom: "1rem", padding: "0.75rem", background: "rgba(255, 51, 102, 0.1)", border: "1px solid rgba(255, 51, 102, 0.3)", borderRadius: "8px", color: "var(--danger)", fontSize: "0.9rem" }}>
+                {editItemForm.error}
+              </div>
+            )}
             <form onSubmit={handleEditItem}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
@@ -476,6 +493,11 @@ export default function InventoryPage() {
         <div className="modal-overlay">
           <div className="modal-content animate-fade-in">
             <h2 style={{ marginBottom: "1.5rem", fontSize: "1.2rem" }}>Create New Category</h2>
+            {categoryError && (
+              <div style={{ marginBottom: "1rem", padding: "0.75rem", background: "rgba(255, 51, 102, 0.1)", border: "1px solid rgba(255, 51, 102, 0.3)", borderRadius: "8px", color: "var(--danger)", fontSize: "0.9rem" }}>
+                {categoryError}
+              </div>
+            )}
             <form onSubmit={handleCreateCategory}>
               <div className="form-group">
                 <label className="form-label">Category Name</label>

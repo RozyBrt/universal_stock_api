@@ -28,6 +28,16 @@ class RegisterRequest(BaseModel):
             raise ValueError('Password must contain digit')
         return v
 
+class ApiKeyResponse(BaseModel):
+    id: int
+    name: str
+    is_active: bool
+    created_at: datetime
+    last_used_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
 # ============= PAGINATION SCHEMAS =============
 
 class PaginationMetadata(BaseModel):

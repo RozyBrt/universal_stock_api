@@ -21,3 +21,10 @@ class ApiKeyRepository(BaseRepository[ApiKey]):
             select(ApiKey).where(ApiKey.key_hash == key_hash).options(selectinload(ApiKey.user))
         )
         return result.scalar_one_or_none()
+        
+    async def get_by_user_id(self, user_id: int):
+        from sqlalchemy import select
+        result = await self.session.execute(
+            select(ApiKey).where(ApiKey.user_id == user_id).order_by(ApiKey.created_at.desc())
+        )
+        return result.scalars().all()
