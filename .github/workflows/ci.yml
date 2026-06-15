@@ -44,7 +44,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # 4. Run database migrations to prepare schema
+      # 4. Run database migrations (self-contained, works on empty DB)
       - name: Run Database Migrations
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:asdasdasd@localhost:5432/universal_stock_db
