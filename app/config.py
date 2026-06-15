@@ -1,5 +1,8 @@
+import os
 from pydantic_settings import BaseSettings
 from typing import Optional
+
+app_env = os.getenv("APP_ENV", "development")
 
 class Settings(BaseSettings):
     # Database
@@ -40,7 +43,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO" if not DEBUG else "DEBUG"
     
     model_config = {
-        "env_file": ".env",
+        "env_file": (".env", f".env.{app_env}"),
         "case_sensitive": True,
         "extra": "ignore"
     }

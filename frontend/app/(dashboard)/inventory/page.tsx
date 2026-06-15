@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchJson } from "../../lib/apiClient";
+import { useWebSocket } from "../../context/WebSocketContext";
 
 export default function InventoryPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -97,6 +98,48 @@ export default function InventoryPage() {
     loadItems();
     loadCategories();
   }, []);
+
+  const { subscribe } = useWebSocket();
+
+  useEffect(() => {
+    // Listen to stock updates
+    const unsubscribeStock = subscribe("STOCK_UPDATE", (data: any) => {
+      setItems((prevItems) => {
+        const exists = prevItems.some((item) => item.id === data.item_id);
+        if (!exists) return prevItems;
+
+        return prevItems.map((item) =>
+          item.id === data.item_id
+            ? {
+                ...item,
+                quantity_in_stock: data.quantity_in_stock,
+                reorder_level: data.reorder_level,
+                flashType: data.action, // "IN" or "OUT"
+              }
+            : item
+        );
+      });
+
+      // Remove flash effect after 1.5 seconds
+      setTimeout(() => {
+        setItems((prevItems) =>
+          prevItems.map((item) =>
+            item.id === data.item_id ? { ...item, flashType: null } : item
+          )
+        );
+      }, 1500);
+    });
+
+    // Listen to item alterations (create, update, delete)
+    const unsubscribeItems = subscribe("ITEM_CHANGED", (data: any) => {
+      loadItems();
+    });
+
+    return () => {
+      unsubscribeStock();
+      unsubscribeItems();
+    };
+  }, [subscribe]);
 
   const openModal = (item: any, type: "in" | "out") => {
     setActionModal({ isOpen: true, type, item, quantity: 1, reference_number: "", notes: "", error: null });
@@ -255,7 +298,7 @@ export default function InventoryPage() {
             </thead>
             <tbody>
               {filteredItems.map((item) => (
-                <tr key={item.id}>
+                <tr key={item.id} className={item.flashType ? `flash-${item.flashType.toLowerCase()}` : ""}>
                   <td className="font-mono">{item.sku}</td>
                   <td className="font-medium">{item.name}</td>
                   <td>{item.category?.name || "-"}</td>
@@ -620,6 +663,24 @@ export default function InventoryPage() {
 
         .inventory-table tbody tr:hover {
           background: rgba(255, 255, 255, 0.03);
+        }
+
+        .inventory-table tbody tr.flash-in {
+          animation: flashGreen 1.5s ease;
+        }
+
+        .inventory-table tbody tr.flash-out {
+          animation: flashRed 1.5s ease;
+        }
+
+        @keyframes flashGreen {
+          0% { background: rgba(0, 255, 157, 0.2); }
+          100% { background: transparent; }
+        }
+
+        @keyframes flashRed {
+          0% { background: rgba(255, 51, 102, 0.2); }
+          100% { background: transparent; }
         }
 
         .font-mono {

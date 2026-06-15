@@ -1,10 +1,13 @@
 from app.repositories.item_repository import ItemRepository
 from app.repositories.transaction_repository import TransactionRepository
-from app.models.database import Item, Transaction
+from app.repositories.category_repository import CategoryRepository
+from app.models.database import Item, Transaction, Category
 from app.models.schemas import ItemCreate, ItemUpdate, TransactionType
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone
 from typing import Optional, List, Tuple
+from app.core.websocket import manager
+from app.core.exceptions import DuplicateSKUException, CategoryNotFoundException
 
 class ItemService:
     """
@@ -104,13 +107,16 @@ class ItemService:
         - Initial quantity >= 0
         - unit_price > 0
         """
+        # Check Category exists
+        category_repo = CategoryRepository(self.session, Category)
+        category = await category_repo.get_by_id(item_data.category_id)
+        if not category:
+            raise CategoryNotFoundException(item_data.category_id)
+
         # Check SKU not already exist
         existing = await self.item_repo.get_by_sku(item_data.sku)
         if existing:
-            raise ValueError(
-                f"SKU '{item_data.sku}' sudah terdaftar. "
-                f"Gunakan PATCH untuk update item yang ada."
-            )
+            raise DuplicateSKUException(item_data.sku)
         
         # Validate price
         if item_data.unit_price <= 0:
@@ -128,6 +134,15 @@ class ItemService:
             created_by=created_by_user_id,
             is_active=True
         )
+        
+        # Broadcast creation
+        await manager.broadcast({
+            "type": "ITEM_CHANGED",
+            "action": "CREATE",
+            "item_id": item.id,
+            "sku": item.sku,
+            "name": item.name
+        })
         
         return item
     
@@ -154,13 +169,29 @@ class ItemService:
             if data_to_update['unit_price'] <= 0:
                 raise ValueError("unit_price harus > 0")
         
-        return await self.item_repo.update(item_id, **data_to_update)
+        updated_item = await self.item_repo.update(item_id, **data_to_update)
+        if updated_item:
+            await manager.broadcast({
+                "type": "ITEM_CHANGED",
+                "action": "UPDATE",
+                "item_id": item_id,
+                "sku": updated_item.sku,
+                "name": updated_item.name
+            })
+        return updated_item
     
     # ============= DELETE OPERATION =============
     
     async def delete_item(self, item_id: int) -> bool:
         """Soft delete item"""
-        return await self.item_repo.delete(item_id)
+        success = await self.item_repo.delete(item_id)
+        if success:
+            await manager.broadcast({
+                "type": "ITEM_CHANGED",
+                "action": "DELETE",
+                "item_id": item_id
+            })
+        return success
     
     # ============= INVENTORY OPERATIONS (CRITICAL) =============
     
@@ -226,6 +257,18 @@ class ItemService:
             
             # Refresh untuk get updated values
             await self.session.refresh(item, ["category"])
+            
+            # Broadcast stock update
+            await manager.broadcast({
+                "type": "STOCK_UPDATE",
+                "item_id": item.id,
+                "sku": item.sku,
+                "name": item.name,
+                "quantity_in_stock": item.quantity_in_stock,
+                "reorder_level": item.reorder_level,
+                "action": "IN",
+                "quantity": quantity
+            })
             
             return item
             
@@ -305,6 +348,30 @@ class ItemService:
             # Step 6: Atomic commit
             await self.session.commit()
             await self.session.refresh(item, ["category"])
+            
+            # Broadcast stock update
+            await manager.broadcast({
+                "type": "STOCK_UPDATE",
+                "item_id": item.id,
+                "sku": item.sku,
+                "name": item.name,
+                "quantity_in_stock": item.quantity_in_stock,
+                "reorder_level": item.reorder_level,
+                "action": "OUT",
+                "quantity": quantity
+            })
+            
+            # Check if low stock
+            if item.quantity_in_stock <= item.reorder_level:
+                await manager.broadcast({
+                    "type": "LOW_STOCK_ALERT",
+                    "item_id": item.id,
+                    "sku": item.sku,
+                    "name": item.name,
+                    "quantity_in_stock": item.quantity_in_stock,
+                    "reorder_level": item.reorder_level,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
             
             return item
             

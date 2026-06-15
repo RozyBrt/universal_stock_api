@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, EmailStr, validator
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
+import re
 
 # ============= AUTH SCHEMAS =============
 class LoginRequest(BaseModel):
@@ -84,36 +85,36 @@ class CategoryResponse(BaseModel):
 
 class CategoryCreate(BaseModel):
     name: str = Field(..., min_length=3, max_length=150)
-    description: Optional[str] = None
+    description: Optional[str] = Field(None, max_length=1000)
 
 class CategoryUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=3, max_length=150)
-    description: Optional[str] = None
+    description: Optional[str] = Field(None, max_length=1000)
     is_active: Optional[bool] = None
 
 # ============= ITEM SCHEMAS =============
 
 class ItemCreate(BaseModel):
     name: str = Field(..., min_length=3, max_length=255, description="Item name")
-    description: Optional[str] = Field(None, description="Detailed description")
+    description: Optional[str] = Field(None, max_length=1000, description="Detailed description")
     sku: str = Field(..., min_length=3, max_length=100, description="Stock Keeping Unit (harus unique)")
     category_id: int = Field(..., gt=0, description="Category ID yang sudah exist")
-    unit_price: float = Field(..., gt=0, description="Price per unit (dalam currency)")
-    quantity_in_stock: int = Field(default=0, ge=0, description="Initial quantity")
-    reorder_level: Optional[int] = Field(default=10, ge=0, description="Alert threshold")
+    unit_price: float = Field(..., gt=0, lt=1000000000.0, description="Price per unit (dalam currency)")
+    quantity_in_stock: int = Field(default=0, ge=0, strict=True, description="Initial quantity")
+    reorder_level: Optional[int] = Field(default=10, ge=0, lt=1000000, strict=True, description="Alert threshold")
     
     @validator('sku')
     def sku_format(cls, v):
-        # SKU should be alphanumeric with hyphens/underscores
-        if not v.replace('-', '').replace('_', '').isalnum():
+        # SKU should be alphanumeric with hyphens/underscores only
+        if not re.match(r'^[a-zA-Z0-9\-_]+$', v):
             raise ValueError('SKU hanya boleh alphanumeric, hyphen, underscore')
         return v.upper()
 
 class ItemUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=3, max_length=255)
-    description: Optional[str] = None
-    unit_price: Optional[float] = Field(None, gt=0)
-    reorder_level: Optional[int] = Field(None, ge=0)
+    description: Optional[str] = Field(None, max_length=1000)
+    unit_price: Optional[float] = Field(None, gt=0, lt=1000000000.0)
+    reorder_level: Optional[int] = Field(None, ge=0, lt=1000000, strict=True)
     is_active: Optional[bool] = None
 
 class ItemResponse(BaseModel):
@@ -228,13 +229,14 @@ class TransactionType(str, Enum):
 class TransactionCreate(BaseModel):
     item_id: int = Field(..., gt=0)
     transaction_type: TransactionType
-    quantity: int = Field(..., gt=0, description="Quantity yang ditransaction")
+    quantity: int = Field(..., gt=0, strict=True, description="Quantity yang ditransaction")
     reference_number: Optional[str] = Field(
         None,
         min_length=3,
+        max_length=100,
         description="PO/SO/Delivery number untuk traceability"
     )
-    notes: Optional[str] = Field(None, description="Additional notes/reason")
+    notes: Optional[str] = Field(None, max_length=1000, description="Additional notes/reason")
 
 class TransactionResponse(BaseModel):
     id: int
@@ -269,14 +271,14 @@ class PaginatedTransactionResponse(BaseModel):
 
 class StockOperationRequest(BaseModel):
     """Request body untuk add_stock / remove_stock"""
-    quantity: int = Field(..., gt=0, description="Quantity yang di-add/remove")
+    quantity: int = Field(..., gt=0, strict=True, description="Quantity yang di-add/remove")
     reference_number: Optional[str] = Field(
         None,
         min_length=3,
         max_length=100,
         description="PO number, SO number, atau reference apapun"
     )
-    notes: Optional[str] = Field(None, description="Reason atau additional info")
+    notes: Optional[str] = Field(None, max_length=1000, description="Reason atau additional info")
 
 class StockOperationResponse(BaseModel):
     """Response dari stock operation (return updated item)"""

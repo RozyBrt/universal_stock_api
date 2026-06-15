@@ -1,6 +1,7 @@
 "use client";
 
 import Sidebar from "../components/Sidebar";
+import { WebSocketProvider } from "../context/WebSocketContext";
 
 export default function DashboardLayout({
   children,
@@ -8,13 +9,15 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="dashboard-wrapper">
-      <Sidebar />
-      <main className="main-content">
-        <div className="page-container">
-          {children}
-        </div>
-      </main>
+    <WebSocketProvider>
+      <div className="dashboard-wrapper">
+        <Sidebar />
+        <main className="main-content">
+          <div className="page-container">
+            {children}
+          </div>
+        </main>
+      </div>
 
       <style jsx>{`
         .dashboard-wrapper {
@@ -28,6 +31,6 @@ export default function DashboardLayout({
           width: calc(100% - 260px);
         }
       `}</style>
-    </div>
+    </WebSocketProvider>
   );
 }

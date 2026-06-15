@@ -15,7 +15,7 @@ from app.config import settings
 from app.core.rate_limit import limiter
 from app.core.logging import StructuredLogger, setup_app_logging
 from app.core.exceptions import AppException, ErrorCode, InternalServerErrorException
-from app.api.v1.routes import items, categories, transactions, auth
+from app.api.v1.routes import items, categories, transactions, auth, websocket
 
 # ============= LOGGING SETUP =============
 
@@ -205,6 +205,7 @@ app.include_router(auth.router, prefix="/api/v1")
 app.include_router(items.router, prefix="/api/v1")
 app.include_router(categories.router, prefix="/api/v1")
 app.include_router(transactions.router, prefix="/api/v1")
+app.include_router(websocket.router, prefix="/api/v1")
 
 # ============= HEALTH CHECK ENDPOINT =============
 
