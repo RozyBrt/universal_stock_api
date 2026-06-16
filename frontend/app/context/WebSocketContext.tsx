@@ -154,8 +154,15 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       socketRef.current.close();
     }
 
-    // Protokol ws:// untuk localhost
-    const wsUrl = `ws://localhost:8000/api/v1/ws?token=${token}`;
+    // Tentukan URL WebSocket secara dinamis berdasarkan NEXT_PUBLIC_API_URL
+    let wsUrl = `ws://localhost:8000/api/v1/ws?token=${token}`;
+    const apiEnvUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (apiEnvUrl) {
+      const baseWsUrl = apiEnvUrl
+        .replace(/^https:\/\//i, "wss://")
+        .replace(/^http:\/\//i, "ws://");
+      wsUrl = `${baseWsUrl}/ws?token=${token}`;
+    }
     const ws = new WebSocket(wsUrl);
     socketRef.current = ws;
 
