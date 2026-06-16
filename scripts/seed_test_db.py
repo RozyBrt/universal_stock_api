@@ -1,6 +1,7 @@
 """
 Seed script untuk E2E tests di CI.
-Membuat demo admin user dan initial categories yang dibutuhkan oleh Playwright tests.
+Membuat demo admin user, categories, dan initial items
+yang dibutuhkan oleh Playwright tests.
 
 Usage: python scripts/seed_test_db.py
 """
@@ -15,7 +16,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select
 
-from app.models.database import User, Category
+from app.models.database import User, Category, Item
 from app.core.security import hash_password
 
 
@@ -48,14 +49,28 @@ DEMO_CATEGORIES = [
     },
 ]
 
+# Item ini diperlukan oleh websocket.spec.ts yang langsung membaca
+# baris pertama di tabel inventaris tanpa membuat item sendiri.
+DEMO_ITEMS = [
+    {
+        "name": "Seed Item A",
+        "sku": "SEED-ITEM-001",
+        "description": "Initial item seeded for E2E tests",
+        "unit_price": 10000,
+        "quantity_in_stock": 50,
+        "reorder_level": 10,
+        "is_active": True,
+    },
+]
+
 
 async def seed():
-    """Create demo admin user and initial categories if they don't exist yet."""
+    """Create demo admin user, categories, and items if they don't exist yet."""
     engine = create_async_engine(DATABASE_URL, echo=False)
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with async_session() as session:
-        # --- Seed demo admin user ---
+        # --- 1. Seed demo admin user ---
         result = await session.execute(
             select(User).where(User.email == DEMO_ADMIN["email"])
         )
@@ -63,6 +78,7 @@ async def seed():
 
         if existing_user:
             print(f"[seed] Demo user '{DEMO_ADMIN['email']}' already exists — skipping.")
+            user_id = existing_user.id
         else:
             user = User(
                 username=DEMO_ADMIN["username"],
@@ -73,10 +89,12 @@ async def seed():
                 is_active=DEMO_ADMIN["is_active"],
             )
             session.add(user)
-            await session.commit()
+            await session.flush()  # flush untuk mendapatkan user.id sebelum commit
+            user_id = user.id
             print(f"[seed] ✅ Demo user '{DEMO_ADMIN['email']}' created successfully.")
 
-        # --- Seed categories ---
+        # --- 2. Seed categories ---
+        category_id = None
         for cat_data in DEMO_CATEGORIES:
             result = await session.execute(
                 select(Category).where(Category.slug == cat_data["slug"])
@@ -85,6 +103,8 @@ async def seed():
 
             if existing_cat:
                 print(f"[seed] Category '{cat_data['name']}' already exists — skipping.")
+                if category_id is None:
+                    category_id = existing_cat.id
             else:
                 category = Category(
                     name=cat_data["name"],
@@ -93,7 +113,34 @@ async def seed():
                     is_active=cat_data["is_active"],
                 )
                 session.add(category)
+                await session.flush()
+                if category_id is None:
+                    category_id = category.id
                 print(f"[seed] ✅ Category '{cat_data['name']}' created successfully.")
+
+        # --- 3. Seed initial items (needed by websocket.spec.ts) ---
+        for item_data in DEMO_ITEMS:
+            result = await session.execute(
+                select(Item).where(Item.sku == item_data["sku"])
+            )
+            existing_item = result.scalar_one_or_none()
+
+            if existing_item:
+                print(f"[seed] Item '{item_data['sku']}' already exists — skipping.")
+            else:
+                item = Item(
+                    name=item_data["name"],
+                    sku=item_data["sku"],
+                    description=item_data["description"],
+                    category_id=category_id,
+                    unit_price=item_data["unit_price"],
+                    quantity_in_stock=item_data["quantity_in_stock"],
+                    reorder_level=item_data["reorder_level"],
+                    is_active=item_data["is_active"],
+                    created_by=user_id,
+                )
+                session.add(item)
+                print(f"[seed] ✅ Item '{item_data['name']}' ({item_data['sku']}) created successfully.")
 
         await session.commit()
 
