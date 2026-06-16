@@ -16,7 +16,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select
 
 from app.models.database import User
-from app.core.security import get_password_hash
+from app.core.security import hash_password
 
 
 DATABASE_URL = os.getenv(
@@ -52,7 +52,7 @@ async def seed():
             user = User(
                 username=DEMO_ADMIN["username"],
                 email=DEMO_ADMIN["email"],
-                password_hash=get_password_hash(DEMO_ADMIN["password"]),
+                password_hash=hash_password(DEMO_ADMIN["password"]),
                 full_name=DEMO_ADMIN["full_name"],
                 role=DEMO_ADMIN["role"],
                 is_active=DEMO_ADMIN["is_active"],
