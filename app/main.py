@@ -52,6 +52,7 @@ app.add_middleware(
         "http://localhost:3000",      # Next.js dev
         "http://localhost:8081",      # Flutter dev
         "http://localhost:5173",      # Vite dev
+        "https://universal-stock-api.vercel.app", # Vercel Production
     ],
     allow_credentials=True,
     allow_methods=["*"],
