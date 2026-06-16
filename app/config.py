@@ -1,5 +1,6 @@
 import os
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 from typing import Optional
 
 app_env = os.getenv("APP_ENV", "development")
@@ -7,6 +8,24 @@ app_env = os.getenv("APP_ENV", "development")
 class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://user:password@localhost/universal_stock"
+    
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def validate_database_url(cls, v: str) -> str:
+        if not v:
+            return v
+        
+        # Replace postgres:// or postgresql:// with postgresql+asyncpg://
+        if v.startswith("postgres://"):
+            v = v.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif v.startswith("postgresql://"):
+            v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+            
+        # Replace sslmode=require with ssl=require for asyncpg compatibility
+        if "sslmode=require" in v:
+            v = v.replace("sslmode=require", "ssl=require")
+            
+        return v
     
     # Security
     SECRET_KEY: str = "your-secret-key-very-long-random-string"
