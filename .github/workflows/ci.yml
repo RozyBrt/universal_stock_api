@@ -18,7 +18,7 @@ jobs:
         image: postgres:15-alpine
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: asdasdasd
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD || 'asdasdasd' }}
           POSTGRES_DB: universal_stock_db
         ports:
           - 5432:5432
@@ -49,30 +49,30 @@ jobs:
       # 4. Run database migrations (self-contained, works on empty DB)
       - name: Run Database Migrations
         env:
-          DATABASE_URL: postgresql+asyncpg://postgres:asdasdasd@localhost:5432/universal_stock_db
+          DATABASE_URL: postgresql+asyncpg://postgres:${{ secrets.POSTGRES_PASSWORD || 'asdasdasd' }}@localhost:5432/universal_stock_db
         run: |
           alembic upgrade head
 
       # 4.5 Seed demo user for E2E tests
       - name: Seed Test Database
         env:
-          DATABASE_URL: postgresql+asyncpg://postgres:asdasdasd@localhost:5432/universal_stock_db
+          DATABASE_URL: postgresql+asyncpg://postgres:${{ secrets.POSTGRES_PASSWORD || 'asdasdasd' }}@localhost:5432/universal_stock_db
         run: |
           python scripts/seed_test_db.py
 
       # 5. Execute Backend unit tests
       - name: Run Backend Tests
         env:
-          DATABASE_URL: postgresql+asyncpg://postgres:asdasdasd@localhost:5432/universal_stock_db
+          DATABASE_URL: postgresql+asyncpg://postgres:${{ secrets.POSTGRES_PASSWORD || 'asdasdasd' }}@localhost:5432/universal_stock_db
         run: |
           pytest
 
       # 6. Start backend FastAPI server in background (APP_ENV=test disables rate limiting)
       - name: Start Backend API Server
         env:
-          DATABASE_URL: postgresql+asyncpg://postgres:asdasdasd@localhost:5432/universal_stock_db
+          DATABASE_URL: postgresql+asyncpg://postgres:${{ secrets.POSTGRES_PASSWORD || 'asdasdasd' }}@localhost:5432/universal_stock_db
           APP_ENV: test
-          SECRET_KEY: test-secret-key-1234567890-long-enough-string
+          SECRET_KEY: ${{ secrets.SECRET_KEY || 'test-secret-key-1234567890-long-enough-string' }}
         run: |
           uvicorn app.main:app --host 0.0.0.0 --port 8000 &
           # Wait a few seconds for FastAPI server to start
