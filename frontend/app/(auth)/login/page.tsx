@@ -22,7 +22,10 @@ export default function LoginPage() {
       formData.append("username", email);
       formData.append("password", password);
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+      let baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+      if (baseUrl && !baseUrl.endsWith('/api/v1') && !baseUrl.endsWith('/api/v1/')) {
+        baseUrl = baseUrl.endsWith('/') ? `${baseUrl}api/v1` : `${baseUrl}/api/v1`;
+      }
       const res = await fetch(`${baseUrl}/auth/login`, {
         method: "POST",
         headers: {

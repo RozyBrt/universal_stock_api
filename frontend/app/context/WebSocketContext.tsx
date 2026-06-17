@@ -156,8 +156,11 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     // Tentukan URL WebSocket secara dinamis berdasarkan NEXT_PUBLIC_API_URL
     let wsUrl = `ws://localhost:8000/api/v1/ws?token=${token}`;
-    const apiEnvUrl = process.env.NEXT_PUBLIC_API_URL;
+    let apiEnvUrl = process.env.NEXT_PUBLIC_API_URL;
     if (apiEnvUrl) {
+      if (!apiEnvUrl.endsWith('/api/v1') && !apiEnvUrl.endsWith('/api/v1/')) {
+        apiEnvUrl = apiEnvUrl.endsWith('/') ? `${apiEnvUrl}api/v1` : `${apiEnvUrl}/api/v1`;
+      }
       const baseWsUrl = apiEnvUrl
         .replace(/^https:\/\//i, "wss://")
         .replace(/^http:\/\//i, "ws://");

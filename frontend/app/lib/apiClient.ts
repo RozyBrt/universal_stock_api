@@ -1,4 +1,8 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+let rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+if (rawBaseUrl && !rawBaseUrl.endsWith('/api/v1') && !rawBaseUrl.endsWith('/api/v1/')) {
+  rawBaseUrl = rawBaseUrl.endsWith('/') ? `${rawBaseUrl}api/v1` : `${rawBaseUrl}/api/v1`;
+}
+const BASE_URL = rawBaseUrl;
 
 // Helper to get token (only works on client-side)
 const getToken = () => {
