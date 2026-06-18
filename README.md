@@ -1,3 +1,13 @@
+---
+title: Universal Stock API
+emoji: 📦
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # Universal Stock - Enterprise Fullstack Inventory Management System
 
 Sistem manajemen inventaris (stock management) tingkat produksi (*production-ready*) dengan arsitektur tangguh, observabilitas modern, keamanan lapis ganda, dan sinkronisasi real-time dua arah.
