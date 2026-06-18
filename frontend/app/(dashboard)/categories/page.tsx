@@ -107,21 +107,42 @@ export default function CategoriesPage() {
       </div>
 
       <div className="glass-panel table-container">
-        {loading ? (
-          <div className="loading-state">Loading categories...</div>
-        ) : (
-          <table className="category-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Category Name</th>
-                <th>Description</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {categories.map((c) => (
+        <table className="category-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Category Name</th>
+              <th>Description</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              [1, 2, 3, 4].map((n) => (
+                <tr key={n}>
+                  <td className="font-mono">
+                    <div className="skeleton" style={{ width: "40px", height: "1.2rem" }}></div>
+                  </td>
+                  <td className="font-medium">
+                    <div className="skeleton" style={{ width: "120px", height: "1.2rem" }}></div>
+                  </td>
+                  <td>
+                    <div className="skeleton" style={{ width: "200px", height: "1.2rem" }}></div>
+                  </td>
+                  <td>
+                    <div className="skeleton" style={{ width: "60px", height: "1.2rem" }}></div>
+                  </td>
+                  <td>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <div className="skeleton" style={{ width: "60px", height: "1.8rem", borderRadius: "6px" }}></div>
+                      <div className="skeleton" style={{ width: "70px", height: "1.8rem", borderRadius: "6px" }}></div>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              categories.map((c) => (
                 <tr key={c.id}>
                   <td className="font-mono">#{c.id}</td>
                   <td className="font-medium">{c.name}</td>
@@ -151,15 +172,15 @@ export default function CategoriesPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
-              {categories.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="text-center empty-state">No categories found.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        )}
+              ))
+            )}
+            {!loading && categories.length === 0 && (
+              <tr>
+                <td colSpan={5} className="text-center empty-state">No categories found.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* New Category Modal */}

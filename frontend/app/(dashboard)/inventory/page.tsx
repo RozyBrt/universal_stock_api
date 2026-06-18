@@ -66,38 +66,51 @@ export default function InventoryPage() {
     }
   };
 
-  const loadItems = async () => {
+  const loadInitialData = async () => {
     setLoading(true);
     try {
-      const response = await fetchJson<any>("/items?limit=500");
-      setItems(response.data || []);
+      const [itemsRes, catsRes] = await Promise.all([
+        fetchJson<any>("/items?limit=500"),
+        fetchJson<any>("/categories?limit=100")
+      ]);
+
+      setItems(itemsRes.data || []);
+
+      const categoriesData = Array.isArray(catsRes) ? catsRes : (catsRes.data || []);
+      setCategories(categoriesData);
+
+      // Auto-select first category if available
+      if (categoriesData.length > 0) {
+        setNewItemForm(prev => ({ ...prev, category_id: categoriesData[0].id }));
+      }
     } catch (error) {
-      console.error("Failed to load items", error);
+      console.error("Failed to load initial inventory data", error);
     } finally {
       setLoading(false);
     }
   };
 
+  const loadItems = async () => {
+    try {
+      const response = await fetchJson<any>("/items?limit=500");
+      setItems(response.data || []);
+    } catch (error) {
+      console.error("Failed to load items", error);
+    }
+  };
+
   const loadCategories = async () => {
     try {
-      // Backend returns list directly, not inside .data based on standard FastAPI response_model=list[...]
       const response = await fetchJson<any>("/categories?limit=100");
-      setCategories(Array.isArray(response) ? response : (response.data || []));
-      
-      // Auto-select first category if available
-      if (Array.isArray(response) && response.length > 0) {
-        setNewItemForm(prev => ({ ...prev, category_id: response[0].id }));
-      } else if (response.data && response.data.length > 0) {
-        setNewItemForm(prev => ({ ...prev, category_id: response.data[0].id }));
-      }
+      const categoriesData = Array.isArray(response) ? response : (response.data || []);
+      setCategories(categoriesData);
     } catch (error) {
       console.error("Failed to load categories", error);
     }
   };
 
   useEffect(() => {
-    loadItems();
-    loadCategories();
+    loadInitialData();
   }, []);
 
   const { subscribe } = useWebSocket();
@@ -298,22 +311,47 @@ export default function InventoryPage() {
           </select>
         </div>
 
-        {loading ? (
-          <div className="loading-state">Loading inventory...</div>
-        ) : (
-          <table className="inventory-table">
-            <thead>
-              <tr>
-                <th>SKU</th>
-                <th>Name</th>
-                <th>Category</th>
-                <th>Stock</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredItems.map((item) => (
+        <table className="inventory-table">
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Stock</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              [1, 2, 3, 4, 5].map((n) => (
+                <tr key={n}>
+                  <td className="font-mono">
+                    <div className="skeleton" style={{ width: "80px", height: "1.2rem" }}></div>
+                  </td>
+                  <td className="font-medium">
+                    <div className="skeleton" style={{ width: "160px", height: "1.2rem" }}></div>
+                  </td>
+                  <td>
+                    <div className="skeleton" style={{ width: "100px", height: "1.2rem" }}></div>
+                  </td>
+                  <td>
+                    <div className="skeleton" style={{ width: "40px", height: "1.6rem", borderRadius: "12px" }}></div>
+                  </td>
+                  <td>
+                    <div className="skeleton" style={{ width: "60px", height: "1.2rem" }}></div>
+                  </td>
+                  <td>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <div className="skeleton" style={{ width: "45px", height: "1.8rem", borderRadius: "6px" }}></div>
+                      <div className="skeleton" style={{ width: "45px", height: "1.8rem", borderRadius: "6px" }}></div>
+                      <div className="skeleton" style={{ width: "30px", height: "1.8rem", borderRadius: "6px" }}></div>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              filteredItems.map((item) => (
                 <tr key={item.id} className={item.flashType ? `flash-${item.flashType.toLowerCase()}` : ""}>
                   <td className="font-mono">{item.sku}</td>
                   <td className="font-medium">{item.name}</td>
@@ -370,15 +408,15 @@ export default function InventoryPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
-              {filteredItems.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="text-center empty-state">No items found in inventory.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        )}
+              ))
+            )}
+            {!loading && filteredItems.length === 0 && (
+              <tr>
+                <td colSpan={6} className="text-center empty-state">No items found in inventory.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* Modal for Stock Actions */}

@@ -11,15 +11,15 @@ export default function DashboardPage() {
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
-        // Fetch all items to calculate basic metrics (max limit is 500)
-        const response = await fetchJson<any>("/items?limit=500");
-        const items = response.data || [];
+        const [itemsRes, alertsRes] = await Promise.all([
+          fetchJson<any>("/items?limit=500"),
+          fetchJson<any>("/items/alerts/low-stock?limit=500")
+        ]);
+
+        const items = itemsRes.data || [];
         const totalStock = items.reduce((sum: number, item: any) => sum + item.quantity_in_stock, 0);
         setMetrics({ totalItems: items.length, totalStock });
-
-        // Fetch low stock alerts
-        const alertsResponse = await fetchJson<any>("/items/alerts/low-stock?limit=500");
-        setLowStockItems(alertsResponse.data || []);
+        setLowStockItems(alertsRes.data || []);
       } catch (error) {
         console.error("Failed to load dashboard data", error);
       } finally {
@@ -37,17 +37,25 @@ export default function DashboardPage() {
       <div className="grid-cards" style={{ marginBottom: "2rem" }}>
         <div className="glass-panel metric-card">
           <div className="metric-icon">📦</div>
-          <div className="metric-info">
+          <div className="metric-info" style={{ flex: 1 }}>
             <h3>Total Items</h3>
-            <p className="metric-value">{loading ? "..." : metrics.totalItems}</p>
+            {loading ? (
+              <div className="skeleton" style={{ width: "80px", height: "2.5rem", marginTop: "0.25rem" }}></div>
+            ) : (
+              <p className="metric-value">{metrics.totalItems}</p>
+            )}
           </div>
         </div>
 
         <div className="glass-panel metric-card">
           <div className="metric-icon">📈</div>
-          <div className="metric-info">
+          <div className="metric-info" style={{ flex: 1 }}>
             <h3>Total Stock Volume</h3>
-            <p className="metric-value">{loading ? "..." : metrics.totalStock}</p>
+            {loading ? (
+              <div className="skeleton" style={{ width: "100px", height: "2.5rem", marginTop: "0.25rem" }}></div>
+            ) : (
+              <p className="metric-value">{metrics.totalStock}</p>
+            )}
           </div>
         </div>
       </div>
@@ -55,7 +63,21 @@ export default function DashboardPage() {
       <div className="alerts-section">
         <h2>Critical Alerts</h2>
         {loading ? (
-          <p>Loading alerts...</p>
+          <div className="grid-cards">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="glass-panel alert-card danger" style={{ borderLeftColor: "rgba(255, 255, 255, 0.1)" }}>
+                <div className="skeleton" style={{ width: "24px", height: "24px", borderRadius: "50%", marginRight: "0.5rem" }}></div>
+                <div className="alert-content" style={{ flex: 1 }}>
+                  <div className="skeleton" style={{ width: "50%", height: "1.2rem", marginBottom: "0.5rem" }}></div>
+                  <div className="skeleton" style={{ width: "30%", height: "0.9rem", marginBottom: "1rem" }}></div>
+                  <div style={{ display: "flex", gap: "1rem" }}>
+                    <div className="skeleton" style={{ width: "80px", height: "1.5rem" }}></div>
+                    <div className="skeleton" style={{ width: "100px", height: "1.5rem" }}></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : lowStockItems.length === 0 ? (
           <div className="glass-panel alert-card success">
             <div className="alert-icon">✅</div>

@@ -54,25 +54,47 @@ export default function TransactionsPage() {
         </div>
 
       <div className="glass-panel table-container">
-        {loading ? (
-          <div className="loading-state">Loading transactions...</div>
-        ) : transactions.length === 0 ? (
-          <div className="empty-state">No transactions recorded yet.</div>
-        ) : (
-          <table className="inventory-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Item ID</th>
-                <th>Quantity</th>
-                <th>Reference No.</th>
-                <th>Notes</th>
-                <th>User ID</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map((trx) => (
+        <table className="inventory-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Item ID</th>
+              <th>Quantity</th>
+              <th>Reference No.</th>
+              <th>Notes</th>
+              <th>User ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              [1, 2, 3, 4, 5].map((n) => (
+                <tr key={n}>
+                  <td>
+                    <div className="skeleton" style={{ width: "130px", height: "1.2rem" }}></div>
+                  </td>
+                  <td>
+                    <div className="skeleton" style={{ width: "50px", height: "1.5rem", borderRadius: "6px" }}></div>
+                  </td>
+                  <td className="font-mono">
+                    <div className="skeleton" style={{ width: "30px", height: "1.2rem" }}></div>
+                  </td>
+                  <td>
+                    <div className="skeleton" style={{ width: "40px", height: "1.2rem" }}></div>
+                  </td>
+                  <td className="font-mono">
+                    <div className="skeleton" style={{ width: "90px", height: "1.2rem" }}></div>
+                  </td>
+                  <td>
+                    <div className="skeleton" style={{ width: "120px", height: "1.2rem" }}></div>
+                  </td>
+                  <td>
+                    <div className="skeleton" style={{ width: "180px", height: "1.2rem" }}></div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              transactions.map((trx) => (
                 <tr key={trx.id}>
                   <td style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
                     {new Date(trx.created_at).toLocaleString()}
@@ -98,10 +120,15 @@ export default function TransactionsPage() {
                   </td>
                   <td>{trx.performed_by}</td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              ))
+            )}
+            {!loading && transactions.length === 0 && (
+              <tr>
+                <td colSpan={7} className="text-center empty-state">No transactions recorded yet.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
       </div>
 
