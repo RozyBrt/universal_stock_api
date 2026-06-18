@@ -290,13 +290,13 @@ export default function ApiKeysPage() {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.7);
-          backdrop-filter: blur(5px);
+          background: rgba(0, 0, 0, 0.75);
+          backdrop-filter: blur(8px);
           display: flex;
-          align-items: flex-start;
+          align-items: center;
           justify-content: center;
           z-index: 1000;
-          padding: 3rem 1rem;
+          padding: 1.5rem;
           overflow-y: auto;
         }
 

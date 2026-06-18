@@ -48,8 +48,31 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
   return response;
 };
 
+// Client-side Memory Cache for GET requests (TTL: 30 seconds)
+const cache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 30000; // 30 seconds
+
+export const clearApiCache = () => {
+  cache.clear();
+};
+
 // Typed response helpers
 export const fetchJson = async <T>(endpoint: string, options?: RequestInit): Promise<T> => {
+  const method = options?.method || 'GET';
+  const isGet = method.toUpperCase() === 'GET';
+  const bypassCache = options?.cache === 'no-store';
+
+  if (isGet && !bypassCache) {
+    const cached = cache.get(endpoint);
+    const now = Date.now();
+    if (cached && (now - cached.timestamp < CACHE_TTL)) {
+      return cached.data as T;
+    }
+  } else if (!isGet) {
+    // Automatically clear cache when doing any write/mutation operation (POST, PATCH, DELETE, etc.)
+    cache.clear();
+  }
+
   const res = await apiClient(endpoint, options);
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
@@ -71,5 +94,9 @@ export const fetchJson = async <T>(endpoint: string, options?: RequestInit): Pro
     return null as T;
   }
   
-  return res.json();
+  const data = await res.json();
+  if (isGet) {
+    cache.set(endpoint, { data, timestamp: Date.now() });
+  }
+  return data;
 };

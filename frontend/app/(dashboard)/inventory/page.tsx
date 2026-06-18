@@ -48,6 +48,7 @@ export default function InventoryPage() {
 
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [historyItem, setHistoryItem] = useState<any | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [historyData, setHistoryData] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
@@ -153,6 +154,7 @@ export default function InventoryPage() {
     e.preventDefault();
     if (!actionModal.item || !actionModal.type) return;
 
+    setSubmitting(true);
     try {
       const endpoint = actionModal.type === "in" ? "add-stock" : "remove-stock";
       await fetchJson(`/items/${actionModal.item.id}/${endpoint}`, {
@@ -168,11 +170,14 @@ export default function InventoryPage() {
       loadItems(); // Refresh items
     } catch (error: any) {
       setActionModal(prev => ({ ...prev, error: error.message || String(error) }));
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleCreateItem = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
       await fetchJson("/items", {
         method: "POST",
@@ -183,11 +188,14 @@ export default function InventoryPage() {
       loadItems(); // Refresh items
     } catch (error: any) {
       setNewItemForm(prev => ({ ...prev, error: error.message || String(error) }));
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
       const response = await fetchJson<any>("/categories", {
         method: "POST",
@@ -204,6 +212,8 @@ export default function InventoryPage() {
       }
     } catch (error: any) {
       setCategoryError(error.message || String(error));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -224,6 +234,7 @@ export default function InventoryPage() {
   const handleEditItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editItemId) return;
+    setSubmitting(true);
     try {
       await fetchJson(`/items/${editItemId}`, {
         method: "PATCH",
@@ -233,17 +244,22 @@ export default function InventoryPage() {
       loadItems();
     } catch (error: any) {
       setEditItemForm(prev => ({ ...prev, error: error.message || String(error) }));
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const confirmDelete = async () => {
     if (!itemToDelete) return;
+    setSubmitting(true);
     try {
       await fetchJson(`/items/${itemToDelete.id}`, { method: "DELETE" });
       setItemToDelete(null);
       loadItems();
     } catch (error: any) {
       alert("Failed to delete item: " + error.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -410,9 +426,9 @@ export default function InventoryPage() {
                 ></textarea>
               </div>
               <div className="modal-actions">
-                <button type="button" className="btn btn-outline" onClick={closeModal}>Cancel</button>
-                <button type="submit" className={`btn ${actionModal.type === "in" ? "btn-primary" : "btn-danger"}`}>
-                  Confirm {actionModal.type === "in" ? "In" : "Out"}
+                <button type="button" className="btn btn-outline" onClick={closeModal} disabled={submitting}>Cancel</button>
+                <button type="submit" className={`btn ${actionModal.type === "in" ? "btn-primary" : "btn-danger"}`} disabled={submitting}>
+                  {submitting ? "Confirming..." : `Confirm ${actionModal.type === "in" ? "In" : "Out"}`}
                 </button>
               </div>
             </form>
@@ -470,8 +486,10 @@ export default function InventoryPage() {
                 <textarea className="form-control" rows={3} value={newItemForm.description} onChange={e => setNewItemForm({...newItemForm, description: e.target.value})}></textarea>
               </div>
               <div className="modal-actions" style={{ marginTop: "2rem" }}>
-                <button type="button" className="btn btn-outline" onClick={() => setNewItemModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Create Item</button>
+                <button type="button" className="btn btn-outline" onClick={() => setNewItemModalOpen(false)} disabled={submitting}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                  {submitting ? "Creating..." : "Create Item"}
+                </button>
               </div>
             </form>
           </div>
@@ -523,8 +541,10 @@ export default function InventoryPage() {
                 <textarea className="form-control" rows={3} value={editItemForm.description} onChange={e => setEditItemForm({...editItemForm, description: e.target.value})}></textarea>
               </div>
               <div className="modal-actions" style={{ marginTop: "2rem" }}>
-                <button type="button" className="btn btn-outline" onClick={() => setEditItemModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Save Changes</button>
+                <button type="button" className="btn btn-outline" onClick={() => setEditItemModalOpen(false)} disabled={submitting}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                  {submitting ? "Saving..." : "Save Changes"}
+                </button>
               </div>
             </form>
           </div>
@@ -551,8 +571,10 @@ export default function InventoryPage() {
                 <textarea className="form-control" rows={2} value={newCategoryDesc} onChange={e => setNewCategoryDesc(e.target.value)}></textarea>
               </div>
               <div className="modal-actions" style={{ marginTop: "1.5rem" }}>
-                <button type="button" className="btn btn-outline" onClick={() => setCreateCategoryModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Create</button>
+                <button type="button" className="btn btn-outline" onClick={() => setCreateCategoryModalOpen(false)} disabled={submitting}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                  {submitting ? "Creating..." : "Create"}
+                </button>
               </div>
             </form>
           </div>
@@ -571,8 +593,10 @@ export default function InventoryPage() {
               Tindakan ini akan menonaktifkan barang tersebut dari peredaran.
             </p>
             <div className="modal-actions" style={{ justifyContent: "center", marginTop: 0 }}>
-              <button type="button" className="btn btn-outline" onClick={() => setItemToDelete(null)}>Batal</button>
-              <button type="button" className="btn btn-danger" onClick={confirmDelete}>Ya, Hapus</button>
+              <button type="button" className="btn btn-outline" onClick={() => setItemToDelete(null)} disabled={submitting}>Batal</button>
+              <button type="button" className="btn btn-danger" onClick={confirmDelete} disabled={submitting}>
+                {submitting ? "Deleting..." : "Ya, Hapus"}
+              </button>
             </div>
           </div>
         </div>
@@ -776,13 +800,13 @@ export default function InventoryPage() {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.7);
-          backdrop-filter: blur(5px);
+          background: rgba(0, 0, 0, 0.75);
+          backdrop-filter: blur(8px);
           display: flex;
-          align-items: flex-start;
+          align-items: center;
           justify-content: center;
           z-index: 1000;
-          padding: 3rem 1rem;
+          padding: 1.5rem;
           overflow-y: auto;
         }
 

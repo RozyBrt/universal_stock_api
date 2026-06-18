@@ -19,6 +19,7 @@ export default function CategoriesPage() {
   // Delete State
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteName, setDeleteName] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const loadCategories = async () => {
     setLoading(true);
@@ -38,6 +39,7 @@ export default function CategoriesPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
       await fetchJson("/categories", {
         method: "POST",
@@ -51,6 +53,8 @@ export default function CategoriesPage() {
       loadCategories();
     } catch (error: any) {
       alert("Failed to create category: " + error.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -63,6 +67,7 @@ export default function CategoriesPage() {
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editId) return;
+    setSubmitting(true);
     try {
       await fetchJson(`/categories/${editId}`, {
         method: "PATCH",
@@ -75,17 +80,22 @@ export default function CategoriesPage() {
       loadCategories();
     } catch (error: any) {
       alert("Failed to update category: " + error.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const confirmDelete = async () => {
     if (!deleteId) return;
+    setSubmitting(true);
     try {
       await fetchJson(`/categories/${deleteId}`, { method: "DELETE" });
       setDeleteId(null);
       loadCategories();
     } catch (error: any) {
       alert("Failed to delete category: " + error.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -167,8 +177,10 @@ export default function CategoriesPage() {
                 <textarea className="form-control" rows={3} value={newForm.description} onChange={e => setNewForm({...newForm, description: e.target.value})}></textarea>
               </div>
               <div className="modal-actions">
-                <button type="button" className="btn btn-outline" onClick={() => setNewModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Create</button>
+                <button type="button" className="btn btn-outline" onClick={() => setNewModalOpen(false)} disabled={submitting}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                  {submitting ? "Creating..." : "Create"}
+                </button>
               </div>
             </form>
           </div>
@@ -190,8 +202,10 @@ export default function CategoriesPage() {
                 <textarea className="form-control" rows={3} value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})}></textarea>
               </div>
               <div className="modal-actions">
-                <button type="button" className="btn btn-outline" onClick={() => setEditModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Save Changes</button>
+                <button type="button" className="btn btn-outline" onClick={() => setEditModalOpen(false)} disabled={submitting}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                  {submitting ? "Saving..." : "Save Changes"}
+                </button>
               </div>
             </form>
           </div>
@@ -210,8 +224,10 @@ export default function CategoriesPage() {
               This will only work if there are no items attached to this category.
             </p>
             <div className="modal-actions" style={{ justifyContent: "center", marginTop: 0 }}>
-              <button type="button" className="btn btn-outline" onClick={() => setDeleteId(null)}>Cancel</button>
-              <button type="button" className="btn btn-danger" onClick={confirmDelete}>Yes, Delete</button>
+              <button type="button" className="btn btn-outline" onClick={() => setDeleteId(null)} disabled={submitting}>Cancel</button>
+              <button type="button" className="btn btn-danger" onClick={confirmDelete} disabled={submitting}>
+                {submitting ? "Deleting..." : "Yes, Delete"}
+              </button>
             </div>
           </div>
         </div>
@@ -306,13 +322,13 @@ export default function CategoriesPage() {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.7);
-          backdrop-filter: blur(5px);
+          background: rgba(0, 0, 0, 0.75);
+          backdrop-filter: blur(8px);
           display: flex;
-          align-items: flex-start;
+          align-items: center;
           justify-content: center;
           z-index: 1000;
-          padding: 3rem 1rem;
+          padding: 1.5rem;
           overflow-y: auto;
         }
 

@@ -9,11 +9,11 @@ export default function TransactionsPage() {
   const [viewNotesModal, setViewNotesModal] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"all" | "me">("all");
 
-  const loadTransactions = async () => {
+  const loadTransactions = async (bypassCache = false) => {
     setLoading(true);
     try {
       const endpoint = viewMode === "me" ? "/transactions/me?limit=100" : "/transactions?limit=100";
-      const response = await fetchJson<any>(endpoint);
+      const response = await fetchJson<any>(endpoint, bypassCache ? { cache: "no-store" } : undefined);
       setTransactions(Array.isArray(response) ? response : (response.data || []));
     } catch (error) {
       console.error("Failed to load transactions", error);
@@ -32,7 +32,7 @@ export default function TransactionsPage() {
         <div className="page-header" style={{ flexDirection: "column", alignItems: "flex-start", gap: "1rem" }}>
           <div style={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
             <h1>Transaction History</h1>
-            <button className="btn btn-outline" onClick={loadTransactions}>
+            <button className="btn btn-outline" onClick={() => loadTransactions(true)}>
               Refresh 🔄
             </button>
           </div>
@@ -96,7 +96,7 @@ export default function TransactionsPage() {
                   >
                     {trx.notes || "-"}
                   </td>
-                  <td>{trx.performed_by_user_id}</td>
+                  <td>{trx.performed_by}</td>
                 </tr>
               ))}
             </tbody>
@@ -231,13 +231,13 @@ export default function TransactionsPage() {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.7);
-          backdrop-filter: blur(5px);
+          background: rgba(0, 0, 0, 0.75);
+          backdrop-filter: blur(8px);
           display: flex;
-          align-items: flex-start;
+          align-items: center;
           justify-content: center;
           z-index: 1000;
-          padding: 3rem 1rem;
+          padding: 1.5rem;
           overflow-y: auto;
         }
 
