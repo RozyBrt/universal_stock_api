@@ -33,3 +33,13 @@ class TransactionRepository(BaseRepository[Transaction]):
             .limit(limit)
         )
         return result.scalars().all()
+
+    async def get_all(self, skip: int = 0, limit: int = 100):
+        result = await self.session.execute(
+            select(Transaction)
+            .order_by(desc(Transaction.created_at))
+            .offset(skip)
+            .limit(limit)
+        )
+        return result.scalars().all()
+
