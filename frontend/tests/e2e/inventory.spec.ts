@@ -29,7 +29,10 @@ test.describe("Manajemen Inventaris (Inventory Management Flow)", () => {
     }, token);
     await page.goto("/inventory");
     await expect(page).toHaveURL(/\/inventory/);
+    // Tunggu hingga skeleton loading selesai
+    await expect(page.locator("table.inventory-table tbody .skeleton").first()).not.toBeVisible({ timeout: 15000 });
   });
+
 
   test("Berhasil membuat barang baru", async ({ page }) => {
     // Buka modal item baru

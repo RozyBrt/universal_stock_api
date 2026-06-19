@@ -35,6 +35,8 @@ test.describe("Real-time WebSocket Synchronization (Multi-Context)", () => {
     }, token);
     await pageA.goto("/inventory");
     await expect(pageA).toHaveURL(/\/inventory/);
+    // Tunggu hingga skeleton loading selesai
+    await expect(pageA.locator("table.inventory-table tbody .skeleton").first()).not.toBeVisible({ timeout: 15000 });
 
     // --- SETUP BROWSER B ---
     await pageB.goto("/login");
@@ -43,12 +45,16 @@ test.describe("Real-time WebSocket Synchronization (Multi-Context)", () => {
     }, token);
     await pageB.goto("/inventory");
     await expect(pageB).toHaveURL(/\/inventory/);
+    // Tunggu hingga skeleton loading selesai
+    await expect(pageB.locator("table.inventory-table tbody .skeleton").first()).not.toBeVisible({ timeout: 15000 });
+
 
     // Ambil detail barang pertama dari Browser B sebelum mutasi
     const firstRowB = pageB.locator("table.inventory-table tbody tr").first();
     await expect(firstRowB).toBeVisible({ timeout: 10000 }); // Tunggu data termuat
     
     const sku = (await firstRowB.locator("td.font-mono").textContent())?.trim() || "";
+
     const initialStockText = (await firstRowB.locator(".stock-badge").textContent())?.trim() || "0";
     const initialStock = parseInt(initialStockText);
     const itemName = (await firstRowB.locator("td.font-medium").textContent())?.trim() || "";
