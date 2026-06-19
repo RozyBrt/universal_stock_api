@@ -15,26 +15,71 @@ Untuk mematuhi standar keamanan aplikasi modern:
 
 ## 2. Alat Manajemen Pengguna CLI (`scripts/manage_users.py`)
 
-Sebuah script utilitas Python telah disediakan untuk melakukan pengecekan akun dan mereset password secara manual langsung pada database PostgreSQL (Neon DB).
+Sebuah script utilitas Python telah disediakan untuk melakukan audit akun, reset password, mengubah role, dan mengaktifkan/menonaktifkan status akun langsung pada database PostgreSQL.
 
-### Prasyarat
-Pastikan Anda menjalankan script ini dari **direktori root proyek** (di mana file `.env` berada) agar konfigurasi database termuat dengan benar:
+### Prasyarat & Mode Target Database
+Secara default, script akan berjalan pada database **Lokal** Anda. Namun, Anda dapat menargetkan database **Produksi** online menggunakan flag `--prod` (mengambil kredensial aman dari file rahasia lokal `.env.production.local`):
 
-### A. Menampilkan Semua User Terdaftar
+*   **Mode Database Lokal:** Cukup jalankan perintah biasa.
+*   **Mode Database Produksi:** Tambahkan flag `--prod` di akhir perintah.
+
+---
+
+### Perintah yang Tersedia:
+
+### A. Menampilkan Semua User Terdaftar (`list`)
 Untuk melihat ID, username, email, role, dan status aktif seluruh akun:
 ```bash
+# Target Lokal
 python scripts/manage_users.py list
+
+# Target Produksi Online
+python scripts/manage_users.py list --prod
 ```
 
-### B. Mereset Password User
-Untuk mereset password pengguna secara aman (script akan otomatis meng-hash password baru dan menyimpannya ke database):
+### B. Mereset Password User (`reset`)
+Untuk mengubah password pengguna (script otomatis meng-hash password baru menggunakan Bcrypt):
 ```bash
+# Target Lokal
 python scripts/manage_users.py reset <email_user> <password_baru>
+
+# Target Produksi Online
+python scripts/manage_users.py reset <email_user> <password_baru> --prod
 ```
 
 **Contoh:**
 ```bash
-python scripts/manage_users.py reset demo@example.com PasswordBaru123
+python scripts/manage_users.py reset demo@example.com PasswordBaru123 --prod
+```
+
+### C. Mengubah Peran User (`role`)
+Untuk mempromosikan atau mendemosikan hak akses user (`admin` atau `user`):
+```bash
+# Target Lokal
+python scripts/manage_users.py role <email_user> <admin|user>
+
+# Target Produksi Online
+python scripts/manage_users.py role <email_user> <admin|user> --prod
+```
+
+**Contoh:**
+```bash
+python scripts/manage_users.py role demo@example.com admin --prod
+```
+
+### D. Mengubah Status Keaktifan Akun (`status`)
+Untuk memblokir (deactivate) atau mengaktifkan kembali (activate) akun pengguna:
+```bash
+# Target Lokal
+python scripts/manage_users.py status <email_user> <activate|deactivate>
+
+# Target Produksi Online
+python scripts/manage_users.py status <email_user> <activate|deactivate> --prod
+```
+
+**Contoh:**
+```bash
+python scripts/manage_users.py status demo@example.com deactivate --prod
 ```
 
 ---
