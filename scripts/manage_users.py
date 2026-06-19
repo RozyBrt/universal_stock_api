@@ -29,13 +29,13 @@ async def reset_password(email: str, new_password: str):
         result = await session.execute(select(User).where(User.email == email))
         user = result.scalar_one_or_none()
         if not user:
-            print(f"\n❌ Error: User dengan email '{email}' tidak ditemukan.\n")
+            print(f"\n[ERROR] User dengan email '{email}' tidak ditemukan.\n")
             return
         
         hashed = hash_password(new_password)
         user.password_hash = hashed
         await session.commit()
-        print(f"\n✅ Sukses: Password untuk user '{user.username}' ({email}) berhasil di-reset!\n")
+        print(f"\n[SUCCESS] Password untuk user '{user.username}' ({email}) berhasil di-reset!\n")
 
 async def main():
     if len(sys.argv) < 2:
