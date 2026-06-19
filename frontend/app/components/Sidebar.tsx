@@ -5,7 +5,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useWebSocket } from "../context/WebSocketContext";
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [username, setUsername] = useState<string | null>(null);
@@ -43,22 +48,29 @@ export default function Sidebar() {
   ];
 
   return (
-    <div className="sidebar animate-fade-in">
-      <div className="sidebar-header">
-        <div className="header-top">
-          <h2 className="brand">
-            <span className="brand-icon">⚡</span> U-Stock
-          </h2>
-          <div className="bell-container">
-            <button className="btn-bell" onClick={() => setShowNotifications(!showNotifications)}>
-              🔔 {unreadCount > 0 && <span className="bell-badge">{unreadCount}</span>}
-            </button>
-            <span
-              className={`status-indicator ${isConnected ? "online" : "offline"}`}
-              title={isConnected ? "Terhubung ke Live Server" : "Terputus dari Live Server"}
-            ></span>
+    <>
+      {/* Sidebar overlay backdrop on mobile */}
+      <div className={`sidebar-overlay ${isOpen ? "visible" : ""}`} onClick={onClose}></div>
+
+      <div className={`sidebar ${isOpen ? "open" : ""} animate-fade-in`}>
+        <div className="sidebar-header">
+          <div className="header-top">
+            <h2 className="brand">
+              <span className="brand-icon">⚡</span> U-Stock
+            </h2>
+            <div className="bell-container">
+              <button className="btn-bell" onClick={() => setShowNotifications(!showNotifications)}>
+                🔔 {unreadCount > 0 && <span className="bell-badge">{unreadCount}</span>}
+              </button>
+              <span
+                className={`status-indicator ${isConnected ? "online" : "offline"}`}
+                title={isConnected ? "Terhubung ke Live Server" : "Terputus dari Live Server"}
+              ></span>
+              <button className="btn-close-sidebar" onClick={onClose} title="Close Menu">
+                ✕
+              </button>
+            </div>
           </div>
-        </div>
 
         {showNotifications && (
           <div className="notifications-dropdown glass-panel">
@@ -135,6 +147,60 @@ export default function Sidebar() {
           left: 0;
           top: 0;
           z-index: 100;
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(4px);
+          z-index: 95;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.3s ease;
+        }
+
+        .sidebar-overlay.visible {
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        .btn-close-sidebar {
+          display: none;
+        }
+
+        @media (max-width: 768px) {
+          .sidebar {
+            transform: translateX(-100%);
+            z-index: 100;
+          }
+
+          .sidebar.open {
+            transform: translateX(0);
+            box-shadow: 10px 0 40px rgba(0, 0, 0, 0.5);
+          }
+
+          .btn-close-sidebar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.3rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            margin-left: 0.5rem;
+            transition: color 0.2s;
+          }
+
+          .btn-close-sidebar:hover {
+            color: var(--danger);
+          }
         }
 
         .sidebar-header {
@@ -425,5 +491,6 @@ export default function Sidebar() {
         }
       `}</style>
     </div>
+    </>
   );
 }

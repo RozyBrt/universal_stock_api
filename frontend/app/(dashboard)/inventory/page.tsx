@@ -311,7 +311,8 @@ export default function InventoryPage() {
           </select>
         </div>
 
-        <table className="inventory-table">
+        <div className="table-responsive-container">
+          <table className="inventory-table">
           <thead>
             <tr>
               <th>SKU</th>
@@ -417,6 +418,7 @@ export default function InventoryPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Modal for Stock Actions */}
@@ -645,7 +647,7 @@ export default function InventoryPage() {
         <div className="modal-overlay" onClick={() => setHistoryModalOpen(false)}>
           <div className="modal-content animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: "800px" }}>
             <h2 style={{ marginBottom: "1.5rem" }}>History - {historyItem?.name}</h2>
-            <div className="glass-panel" style={{ maxHeight: "400px", overflowY: "auto", padding: 0 }}>
+            <div className="glass-panel" style={{ maxHeight: "400px", overflowY: "auto", overflowX: "auto", padding: 0 }}>
               {historyLoading ? (
                 <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)" }}>Loading history...</div>
               ) : (
@@ -829,6 +831,14 @@ export default function InventoryPage() {
           padding: 3rem;
           text-align: center;
           color: var(--text-muted);
+        }
+
+        .table-responsive-container {
+          overflow-x: auto;
+          width: 100%;
+          -webkit-overflow-scrolling: touch;
+          margin-bottom: 1.5rem;
+          border-radius: 8px;
         }
 
         /* Modal Styles */
