@@ -45,9 +45,15 @@ To create the "frosted glass" depth, every panel relies on a layered combination
 
 ## 2. Layout & Typography
 
-The application utilizes a responsive dashboard layout consisting of a fixed navigation sidebar and a scrollable main content wrapper.
+The application utilizes a responsive dashboard layout designed to adapt seamlessly across desktop monitors, tablets, and mobile phones.
 
-*   **Grid Systems:** Grid structures use dynamic layouts (e.g., `grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))`) to adapt dynamically between desktop screens, tablets, and mobile resolutions without layout fragmentation.
+*   **Desktop Layout:** Displays a fixed left-side navigation sidebar (`width: 260px`) and a scrollable main content area (`margin-left: 260px`, `width: calc(100% - 260px)`).
+*   **Mobile Layout (Viewport < 768px):**
+    - **Header Bar:** A top-floating `60px` header bar with a frosted glass backdrop (`rgba(15, 17, 26, 0.8)` + `backdrop-filter: blur(12px)`) and a vibrant primary-colored hamburger button (☰).
+    - **Drawer Sidebar:** The sidebar slides in from the left on request (`transform: translateX(-100%)` transitioning to `translateX(0)` when opened). It features a manual close button (✕) and is locked with a z-index of 100.
+    - **Backdrop Overlay:** A semi-transparent blurred backdrop overlay covers the active page content (`backdrop-filter: blur(4px)`) and intercepts click events to close the drawer automatically if a tap occurs outside the navigation menu.
+*   **Grid Systems:** Grid structures use dynamic layouts (e.g., `grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))`) to adapt dynamically without layout fragmentation.
+*   **Responsive Table Scrolling:** All tables are wrapped in a container class (`.table-container` or `.table-responsive-container`) with `overflow-x: auto` and `-webkit-overflow-scrolling: touch` enabled. This isolates wider tables, allowing smooth finger-swipe horizontal scrolling on mobile viewports without warping the main grid boundaries.
 *   **Typography:** The font system is loaded from Google Fonts:
     - **Outfit:** Used for main page headers, card values, and key titles (gives a high-tech modern appeal).
     - **Inter:** Used for body texts, descriptions, and data tables (provides readable, clean proportions).
