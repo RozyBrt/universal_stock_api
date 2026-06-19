@@ -137,6 +137,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         .sidebar {
           width: 260px;
           height: 100vh;
+          height: 100dvh;
           background: var(--bg-card);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
@@ -148,6 +149,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           top: 0;
           z-index: 100;
           transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          overflow-y: auto;
+          scrollbar-width: none; /* Firefox */
+          -ms-overflow-style: none; /* IE and Edge */
+        }
+        .sidebar::-webkit-scrollbar {
+          display: none; /* Chrome, Safari and Opera */
         }
 
         .sidebar-overlay {
