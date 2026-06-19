@@ -8,7 +8,7 @@ from app.api.v1.dependencies import get_current_user, require_admin
 from app.models.schemas import (
     ItemCreate, ItemUpdate, ItemResponse, PaginatedItemResponse,
     StockOperationRequest, StockOperationResponse,
-    PaginatedLowStockResponse
+    PaginatedLowStockResponse, AnalyticsResponse
 )
 from app.services.item_service import ItemService
 from app.models.database import User
@@ -232,6 +232,38 @@ async def get_low_stock_items(
     except Exception as e:
         raise InternalServerErrorException(
             message=f"Error fetching low stock items: {str(e)}"
+        )
+
+# ============= GET ANALYTICS METRICS =============
+
+@router.get(
+    "/analytics",
+    response_model=AnalyticsResponse,
+    summary="Get dashboard analytics metrics",
+    responses={
+        200: {"description": "Successfully retrieved analytics metrics"},
+        401: {"description": "Unauthorized"},
+        500: {"description": "Server error"}
+    }
+)
+@limiter.limit(settings.RATE_LIMIT_ITEMS_GET)
+async def get_analytics(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get aggregated analytics metrics for the dashboard.
+    
+    **Authentication:** Required
+    """
+    try:
+        service = ItemService(db)
+        metrics = await service.get_analytics_metrics()
+        return metrics
+    except Exception as e:
+        raise InternalServerErrorException(
+            message=f"Error fetching analytics metrics: {str(e)}"
         )
 
 # ============= GET ITEM BY ID =============

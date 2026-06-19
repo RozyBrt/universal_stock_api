@@ -326,3 +326,28 @@ class ValidationError(BaseModel):
     message: str = "Invalid request data"
     errors: List[ValidationErrorDetail]
     timestamp: datetime
+
+# ============= ANALYTICS SCHEMAS =============
+
+class TopMovingItem(BaseModel):
+    id: int
+    name: str
+    sku: str
+    total_out: int
+
+    class Config:
+        from_attributes = True
+
+class TransactionTrendItem(BaseModel):
+    date: str
+    total_in: int
+    total_out: int
+
+class AnalyticsResponse(BaseModel):
+    total_items: int
+    total_stock_volume: int
+    total_asset_value: float
+    low_stock_ratio: float
+    stock_turnover: int
+    transaction_trends: List[TransactionTrendItem]
+    top_moving_items: List[TopMovingItem]

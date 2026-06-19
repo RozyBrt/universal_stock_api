@@ -4,7 +4,8 @@ from app.repositories.category_repository import CategoryRepository
 from app.models.database import Item, Transaction, Category
 from app.models.schemas import ItemCreate, ItemUpdate, TransactionType
 from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import datetime, timezone
+from sqlalchemy import select, func, and_, desc, cast, Date
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Tuple
 from app.core.websocket import manager
 from app.core.exceptions import DuplicateSKUException, CategoryNotFoundException
@@ -378,3 +379,118 @@ class ItemService:
         except Exception as e:
             await self.session.rollback()
             raise
+
+    async def get_analytics_metrics(self) -> dict:
+        """
+        Mengagregasikan data analitik dari database Neon PostgreSQL.
+        
+        Kalkulasi yang dilakukan:
+        1. Total Items (aktif)
+        2. Total Stock Volume (aktif)
+        3. Total Asset Value: SUM(qty * unit_price)
+        4. Low Stock Ratio: Persentase barang di bawah reorder level
+        5. Stock Turnover: Jumlah transaksi 7 hari terakhir
+        6. Transaction Trends: Total IN dan OUT harian selama 7 hari terakhir
+        7. Top Moving Items: 5 barang paling aktif keluar dalam 30 hari terakhir
+        """
+        # 1, 2, 3. Total Items, Stock, dan Nilai Aset
+        stmt = select(
+            func.count(Item.id),
+            func.sum(Item.quantity_in_stock),
+            func.sum(Item.quantity_in_stock * Item.unit_price)
+        ).where(Item.is_active == True)
+        
+        res = await self.session.execute(stmt)
+        total_items, total_stock_volume, total_asset_value = res.fetchone()
+        
+        total_items = total_items or 0
+        total_stock_volume = total_stock_volume or 0
+        total_asset_value = float(total_asset_value or 0.0)
+        
+        # 4. Low stock ratio
+        low_stock_stmt = select(func.count(Item.id)).where(
+            and_(Item.quantity_in_stock < Item.reorder_level, Item.is_active == True)
+        )
+        low_stock_res = await self.session.execute(low_stock_stmt)
+        low_stock_count = low_stock_res.scalar() or 0
+        low_stock_ratio = float(low_stock_count / total_items) if total_items > 0 else 0.0
+        
+        # 5. Stock turnover (Transactions in the last 7 days)
+        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        turnover_stmt = select(func.count(Transaction.id)).where(
+            Transaction.created_at >= seven_days_ago
+        )
+        turnover_res = await self.session.execute(turnover_stmt)
+        stock_turnover = turnover_res.scalar() or 0
+        
+        # 6. Transaction Trends (7 days IN vs OUT)
+        trend_stmt = (
+            select(
+                cast(Transaction.created_at, Date).label("date"),
+                Transaction.transaction_type,
+                func.sum(Transaction.quantity)
+            )
+            .where(Transaction.created_at >= seven_days_ago)
+            .group_by(cast(Transaction.created_at, Date), Transaction.transaction_type)
+            .order_by(cast(Transaction.created_at, Date))
+        )
+        trend_res = await self.session.execute(trend_stmt)
+        trend_rows = trend_res.all()
+        
+        # Inisialisasi peta 7 hari terakhir agar data tanggal yang tidak bertransaksi tetap bernilai 0
+        trends_map = {}
+        for i in range(6, -1, -1):
+            d_str = (datetime.utcnow() - timedelta(days=i)).strftime("%Y-%m-%d")
+            trends_map[d_str] = {"date": d_str, "total_in": 0, "total_out": 0}
+            
+        for row in trend_rows:
+            d_str = row[0].strftime("%Y-%m-%d")
+            if d_str in trends_map:
+                if row[1] == "IN":
+                    trends_map[d_str]["total_in"] = int(row[2] or 0)
+                elif row[1] == "OUT":
+                    trends_map[d_str]["total_out"] = int(row[2] or 0)
+                    
+        transaction_trends = list(trends_map.values())
+        
+        # 7. Top Moving Items (Top 5 barang keluar terbanyak dalam 30 hari terakhir)
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        top_stmt = (
+            select(
+                Transaction.item_id,
+                func.sum(Transaction.quantity).label("total_out")
+            )
+            .where(
+                and_(
+                    Transaction.transaction_type == "OUT",
+                    Transaction.created_at >= thirty_days_ago
+                )
+            )
+            .group_by(Transaction.item_id)
+            .order_by(desc("total_out"))
+            .limit(5)
+        )
+        top_res = await self.session.execute(top_stmt)
+        top_rows = top_res.all()
+        
+        top_moving_items = []
+        for row in top_rows:
+            item_id, total_out = row
+            item = await self.item_repo.get_by_id(item_id)
+            if item:
+                top_moving_items.append({
+                    "id": item.id,
+                    "name": item.name,
+                    "sku": item.sku,
+                    "total_out": int(total_out or 0)
+                })
+                
+        return {
+            "total_items": total_items,
+            "total_stock_volume": total_stock_volume,
+            "total_asset_value": total_asset_value,
+            "low_stock_ratio": low_stock_ratio,
+            "stock_turnover": stock_turnover,
+            "transaction_trends": transaction_trends,
+            "top_moving_items": top_moving_items
+        }
