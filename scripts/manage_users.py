@@ -5,6 +5,21 @@ import os
 # Menambahkan root folder ke python path agar app module bisa diimport
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Cek flag --prod untuk menggunakan database produksi dari .env.production.local
+if "--prod" in sys.argv:
+    sys.argv.remove("--prod")
+    prod_env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env.production.local")
+    if os.path.exists(prod_env_path):
+        with open(prod_env_path, "r") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    os.environ[k.strip()] = v.strip().strip("'\"")
+        print("[INFO] Menggunakan database PRODUKSI (Neon DB) dari .env.production.local")
+    else:
+        print("[WARNING] File .env.production.local tidak ditemukan! Menggunakan database lokal.")
+
 from sqlalchemy import select
 from app.database import AsyncSessionLocal
 from app.models.database import User
