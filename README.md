@@ -147,3 +147,13 @@ ws.onmessage = (event) => {
   }
 };
 ```
+
+---
+
+## 📚 Panduan Tambahan (Extra Guides)
+
+Untuk membantu pemahaman mendalam tentang proyek ini, Anda dapat merujuk ke dokumen panduan berikut:
+*   **[Buku Panduan Developer (Junior Guide)](file:///d:/Documents/python_projects/universal_stock_api/JUNIOR_GUIDE.md):** Penjelasan alur data, tech stack, peta struktur folder, aturan penulisan kode (*DOs & DON'Ts*), serta cara memulai bagi pengembang baru atau junior programmer.
+*   **[Panduan Admin & Pengguna CLI (Admin Guide)](file:///d:/Documents/python_projects/universal_stock_api/ADMIN.md):** Cara mengaudit akun, mereset password, mengubah hak akses (*role*), serta mengisi data awal database (*seeding*) baik di lokal maupun produksi online.
+*   **[Dokumentasi Desain & UI (Design Guide)](file:///d:/Documents/python_projects/universal_stock_api/DESIGN.md):** Informasi sistem visual, skema warna glassmorphism dark-mode, micro-animations, dan grafik SVG interaktif.
+*   **[Arsitektur Sistem (Architecture Guide)](file:///d:/Documents/python_projects/universal_stock_api/ARCHITECTURE.md):** Penjelasan detail topologi multi-cloud, penanganan race conditions (*row-level locking*), dan diagram alur sinkronisasi real-time WebSockets.
