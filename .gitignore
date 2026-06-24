@@ -16,3 +16,6 @@ frontend/node_modules/
 frontend/.next/
 frontend/out/
 frontend/build/
+
+# Favicon (binary file, kept local only - not pushed to remote)
+frontend/app/favicon.ico
